@@ -2,6 +2,6 @@ Flask
 opencv-python
 numpy
 Pillow
-librosa
+# librosa
 moviepy==1.0.3
-matplotlib
+# matplotlib
