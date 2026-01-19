@@ -1,0 +1,45 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="glass-panel">
+    <h2>Video Processing</h2>
+    <p>Upload a video to extract frames and view metadata.</p>
+    <br>
+    <!-- Custom File Input -->
+    <div class="file-upload-wrapper">
+        <input type="file" id="videoInput" accept="video/*" class="file-upload-input">
+        <div class="file-upload-box">
+            <i class="fas fa-video"></i>
+            <p>Click or Drag Video Here</p>
+        </div>
+    </div>
+
+    <!-- Video Preview -->
+    <div id="videoPreviewContainer" class="hidden" style="margin-bottom: 1rem; text-align: center;">
+        <video id="videoPreview" controls style="max-width: 100%; max-height: 300px; border-radius: 10px;"></video>
+    </div>
+
+    <div class="control-row" style="justify-content: center;">
+        <label>Number of Frames to Extract: <input type="number" id="numFrames" value="10" min="1" max="20"></label>
+    </div>
+    <button onclick="processVideo()">Process Video</button>
+</div>
+
+<div id="videoResult" class="glass-panel hidden">
+    <h3>Metadata</h3>
+    <div id="videoMeta"></div>
+    
+    <h3>Extracted Frames</h3>
+    <button onclick="animateFrames()" style="margin-bottom: 1rem; background: linear-gradient(to right, #ff416c, #ff4b2b);">Animate Frames</button>
+    
+    <!-- Animation Container -->
+    <div id="animationDisplay" class="hidden" style="margin-bottom: 1rem; text-align: center;">
+        <img id="animationImg" src="" style="max-width: 300px; border-radius: 10px; border: 2px solid #fff;">
+        <p>Simulating Video from Frames...</p>
+    </div>
+
+    <div class="cards-grid" id="framesGrid">
+        <!-- Frames will be injected here -->
+    </div>
+</div>
+{% endblock %}

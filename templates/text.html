@@ -1,0 +1,28 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="glass-panel">
+    <h2>Text Encoding</h2>
+    <p>Enter text to see its representation in different formats.</p>
+    <br>
+    <textarea id="textInput" rows="4" placeholder="Type something here..."></textarea>
+    <button onclick="processText()">Convert</button>
+</div>
+
+<div id="textResult" class="glass-panel hidden">
+    <h3>Results</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Character</th>
+                <th>ASCII (Decimal)</th>
+                <th>Hexadecimal</th>
+                <th>Binary</th>
+            </tr>
+        </thead>
+        <tbody id="textTableBody">
+            <!-- Results will be injected here -->
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,94 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="glass-panel image-panel">
+    <h2>Image Representation</h2>
+    <p>Upload an image to explore RGB layers, Sampling, and Quantization.</p>
+    <br>
+    
+    <!-- Custom File Input -->
+    <div class="file-upload-wrapper">
+        <input type="file" id="imageInput" accept="image/*" class="file-upload-input">
+        <div class="file-upload-box">
+            <i class="fas fa-cloud-upload-alt"></i>
+            <p>Click or Drag Image Here</p>
+        </div>
+    </div>
+    
+    <div class="controls hidden" id="imageControls">
+        <!-- Tabs Navigation -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="openTab('tab-rgb')">RGB Channels</button>
+            <button class="tab-btn" onclick="openTab('tab-sampling')">Sampling</button>
+            <button class="tab-btn" onclick="openTab('tab-quant')">Quantization</button>
+            <button class="tab-btn" onclick="openTab('tab-mixing')">Color Mixing</button>
+        </div>
+
+        <!-- Tab Content: RGB -->
+        <div id="tab-rgb" class="tab-content active">
+            <h3>RGB Decomposition</h3>
+            <p>Split the image into its Red, Green, and Blue channels.</p>
+            <button onclick="decomposeRGB()">Decompose RGB</button>
+        </div>
+        
+        <!-- Tab Content: Sampling -->
+        <div id="tab-sampling" class="tab-content">
+            <h3>Sampling (Resolution)</h3>
+            <p>Simulate reducing the spatial resolution (pixelation).</p>
+            <div class="control-row">
+                <label>Rows: <input type="number" id="sampleRows" value="50" min="2" max="500"></label>
+                <label>Cols: <input type="number" id="sampleCols" value="50" min="2" max="500"></label>
+            </div>
+            <button onclick="applySampling()">Apply Sampling</button>
+        </div>
+        
+        <!-- Tab Content: Quantization -->
+        <div id="tab-quant" class="tab-content">
+            <h3>Quantization (Color Depth)</h3>
+            <p>Reduce the number of unique colors in the image.</p>
+            <div class="control-row">
+                <label>Number of Colors: <input type="number" id="quantColors" value="16" min="2" max="256"></label>
+            </div>
+            <button onclick="applyQuantization()">Apply Quantization</button>
+        </div>
+
+        <!-- Tab Content: Color Mixing -->
+        <div id="tab-mixing" class="tab-content">
+            <h3>Color Mixing</h3>
+            <p>Select a region on the image and mix RGB colors to fill it.</p>
+            
+            <div class="control-row" style="align-items: center;">
+                <div style="flex: 1;">
+                    <label>Red: <input type="range" id="sliderR" min="0" max="255" value="0" oninput="updateColorFromSliders()"></label>
+                    <span id="valR">0</span>
+                </div>
+                <div style="flex: 1;">
+                    <label>Green: <input type="range" id="sliderG" min="0" max="255" value="0" oninput="updateColorFromSliders()"></label>
+                    <span id="valG">0</span>
+                </div>
+                <div style="flex: 1;">
+                    <label>Blue: <input type="range" id="sliderB" min="0" max="255" value="0" oninput="updateColorFromSliders()"></label>
+                    <span id="valB">0</span>
+                </div>
+            </div>
+            
+            <div class="control-row" style="align-items: center;">
+                <label>Color Picker: <input type="color" id="colorPicker" oninput="updateColorFromPicker()"></label>
+                <div id="colorPreview" style="width: 50px; height: 50px; border: 1px solid white; margin-left: 1rem;"></div>
+            </div>
+
+            <button onclick="enableSelectionMode()">Start Selection Mode</button>
+            <button onclick="applyColorMixing()">Apply Color</button>
+            <p id="selectionInfo" style="margin-top: 0.5rem; font-size: 0.9rem; color: #aaa;">Click "Start Selection Mode" then drag on the image to select a region.</p>
+        </div>
+    </div>
+</div>
+
+<div id="imageDisplay" class="glass-panel hidden">
+    <h3>Result</h3>
+    <!-- Added relative positioning for overlay -->
+    <div class="image-container" id="imageContainer" style="position: relative; display: inline-block;">
+        <!-- Images will be displayed here -->
+    </div>
+</div>
+{% endblock %}

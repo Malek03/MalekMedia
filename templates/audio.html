@@ -1,0 +1,42 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="glass-panel">
+    <h2>Audio Analysis</h2>
+    <p>Upload an audio file to view its waveform and binary representation.</p>
+    <br>
+    <!-- Custom File Input -->
+    <div class="file-upload-wrapper">
+        <input type="file" id="audioInput" accept="audio/*" class="file-upload-input">
+        <div class="file-upload-box">
+            <i class="fas fa-music"></i>
+            <p>Click or Drag Audio Here</p>
+        </div>
+    </div>
+
+    <!-- Audio Preview -->
+    <div id="audioPreviewContainer" class="hidden" style="margin-bottom: 1rem; text-align: center;">
+        <audio id="audioPreview" controls style="width: 100%;"></audio>
+    </div>
+
+    <div class="control-row" style="justify-content: center;">
+        <label>Number of Samples to Convert: <input type="number" id="numSamples" value="20" min="1" max="100"></label>
+    </div>
+    <button onclick="processAudio()">Analyze Audio</button>
+</div>
+
+<div id="audioResult" class="glass-panel hidden">
+    <h3>Metadata</h3>
+    <div id="audioMeta" style="margin-bottom: 1rem;"></div>
+
+    <h3>Waveform</h3>
+    <div class="image-wrapper">
+        <img id="waveformImage" src="" alt="Waveform">
+    </div>
+    
+    <h3>Binary Representation</h3>
+    <div class="result-box">
+        <pre id="binaryData"></pre>
+    </div>
+</div>
+{% endblock %}

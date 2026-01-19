@@ -1,0 +1,1344 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MalekCode - Image Histogram Analysis</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
+    <style>
+        :root {
+            --bg-color: #0f1115;
+            --card-bg: #181b21;
+            --accent-color: #6366f1;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --border-color: #2d3139;
+            --success-color: #10b981;
+            --radius-md: 12px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 2rem 1rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            gap: 2rem;
+            grid-template-columns: 1fr;
+        }
+
+        @media (min-width: 800px) {
+            .container {
+                grid-template-columns: 350px 1fr;
+            }
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+        }
+
+        .upload-area {
+            border: 2px dashed var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 2rem 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .upload-area:hover {
+            border-color: var(--accent-color);
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        #fileInput { display: none; }
+
+        .btn {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            font-size: 0.9rem;
+        }
+
+        .btn:hover {
+            border-color: var(--accent-color);
+            transform: translateY(-2px);
+        }
+
+        .btn-primary {
+            background: var(--accent-color);
+            border-color: var(--accent-color);
+            color: white;
+        }
+
+        .canvas-wrapper {
+            width: 100%;
+            height: 300px;
+            position: relative;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .preview-container {
+            display: none;
+            margin-top: 1rem;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+        }
+
+        .preview-container img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .tab-nav {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            font-weight: 600;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .tab-btn.active {
+            color: var(--accent-color);
+            border-bottom-color: var(--accent-color);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .navbar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .nav-btn {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-btn:hover {
+            border-color: var(--accent-color);
+            color: var(--text-main);
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid var(--border-color);
+            border-top-color: var(--accent-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .radio-group {
+            display: flex;
+            background: rgba(0,0,0,0.2);
+            padding: 4px;
+            border-radius: var(--radius-md);
+            gap: 4px;
+        }
+
+        .radio-option {
+            flex: 1;
+            position: relative;
+        }
+
+        .radio-option input {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .radio-tile {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.75rem;
+            border-radius: 8px;
+            color: var(--text-muted);
+            transition: all 0.3s;
+        }
+
+        .radio-option input:checked + .radio-tile {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .matrix-grid {
+            display: grid;
+            gap: 4px;
+            background: #2d3139;
+            padding: 4px;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+
+        .matrix-cell {
+            background: var(--card-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            color: var(--text-main);
+            border-radius: 4px;
+            min-width: 40px;
+            min-height: 40px;
+        }
+
+        #resultSection {
+            display: none;
+            margin-top: 2rem;
+        }
+
+        #resultHistogramContainer {
+            display: none;
+            margin-top: 1rem;
+        }
+
+        .section-label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>MalekCode</h1>
+        <p class="subtitle">Professional Image Histogram Analysis</p>
+    </header>
+
+    <div class="tab-nav">
+        <button class="tab-btn active" data-tab="tabBasicOps">Basic Operations</button>
+        <button class="tab-btn" data-tab="tabHistogram">Histogram Analysis</button>
+        <button class="tab-btn" data-tab="tabFilters">Spatial Filters</button>
+    </div>
+
+    <!-- Tab 0: Basic Operations -->
+    <div id="tabBasicOps" class="tab-content active">
+        <div class="container">
+            <div class="card">
+                <label class="section-label">Basic Operations</label>
+                
+                <!-- Scale -->
+                <div style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem;">
+                    <label class="section-label" style="color: var(--accent-color);">Scale (Zoom)</label>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <input type="number" id="scaleFactor" value="1.0" step="0.1" min="0.1" style="flex: 1; padding: 0.5rem; background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-main); border-radius: var(--radius-md);">
+                        <button id="btnScale" class="btn btn-primary">Scale</button>
+                    </div>
+                </div>
+
+                <!-- Rotate -->
+                <div style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem;">
+                    <label class="section-label" style="color: var(--accent-color);">Rotate</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem;">
+                        <input type="number" id="rotateAngle" placeholder="Angle (deg)" value="90" style="padding: 0.5rem; background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-main); border-radius: var(--radius-md);">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox" id="rotateExpand">
+                            <label for="rotateExpand" style="font-size: 0.85rem; color: var(--text-muted);">Keep Size (Fit)</label>
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem;">
+                        <input type="number" id="rotateCenterX" placeholder="Center X (Optional)" style="padding: 0.5rem; background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-main); border-radius: var(--radius-md);">
+                        <input type="number" id="rotateCenterY" placeholder="Center Y (Optional)" style="padding: 0.5rem; background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-main); border-radius: var(--radius-md);">
+                    </div>
+                    <button id="btnRotate" class="btn btn-primary" style="width: 100%;">Rotate</button>
+                </div>
+
+                <!-- Translate -->
+                <div style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem;">
+                    <label class="section-label" style="color: var(--accent-color);">Translate (Move)</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem;">
+                        <input type="number" id="transX" placeholder="Offset X" value="50" style="padding: 0.5rem; background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-main); border-radius: var(--radius-md);">
+                        <input type="number" id="transY" placeholder="Offset Y" value="50" style="padding: 0.5rem; background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-main); border-radius: var(--radius-md);">
+                    </div>
+                    <button id="btnTranslate" class="btn btn-primary" style="width: 100%;">Translate</button>
+                </div>
+
+                <!-- Crop -->
+                <div>
+                    <label class="section-label" style="color: var(--accent-color);">Crop</label>
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+                        1. Click "Enable Crop Mode"<br>
+                        2. Draw a box on the image<br>
+                        3. Click "Apply Crop"
+                    </p>
+                    <button id="btnEnableCrop" class="btn" style="width: 100%; margin-bottom: 0.5rem;">Enable Crop Mode</button>
+                    <button id="btnApplyCrop" class="btn btn-primary" style="width: 100%;" disabled>Apply Crop</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <label class="section-label" style="margin: 0;">Image Preview</label>
+                    <span id="imageShapeDisplay" style="font-size: 0.85rem; color: var(--accent-color); font-family: monospace;"></span>
+                </div>
+                <div class="preview-container" id="basicOpsPreviewContainer" style="position: relative; cursor: crosshair; overflow: auto; max-height: 600px;">
+                    <img id="basicOpsPreviewImage" alt="Preview" style="display: block; max-width: none;">
+                    <div id="cropOverlay" style="position: absolute; border: 2px dashed #6366f1; background: rgba(99, 102, 241, 0.2); display: none; pointer-events: none;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab 1: Histogram -->
+    <div id="tabHistogram" class="tab-content">
+        <nav class="navbar">
+            <button class="nav-btn" id="navEqualize"><span>✨</span> Equalize</button>
+            <button class="nav-btn" id="navLog"><span>📈</span> Log Transform</button>
+            <button class="nav-btn" id="navNegative"><span>🌗</span> Negative</button>
+        </nav>
+
+        <div class="container">
+            <div class="card">
+                <label class="section-label">Upload Image</label>
+                <div class="upload-area" id="dropZone">
+                    <span style="font-size: 2.5rem; display: block; margin-bottom: 1rem;">📁</span>
+                    <h3>Click or Drop Image</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-muted);">Supports PNG, JPG, GIF</p>
+                    <input type="file" id="fileInput" accept="image/png, image/jpeg, image/gif">
+                </div>
+
+                <div style="margin-top: 1.5rem;">
+                    <label class="section-label">Analysis Mode</label>
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" name="mode" value="grayscale" id="modeGray" checked>
+                            <div class="radio-tile">Grayscale</div>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" name="mode" value="color" id="modeColor">
+                            <div class="radio-tile">RGB Color</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="preview-container" id="previewContainer">
+                    <img id="previewImage" alt="Preview">
+                </div>
+            </div>
+
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <label class="section-label" style="margin: 0;">Histogram Data</label>
+                    <div id="imageStats" style="font-size: 0.8rem; color: var(--text-muted);">Waiting for image...</div>
+                </div>
+
+                <div class="canvas-wrapper">
+                    <canvas id="histogramCanvas"></canvas>
+                </div>
+
+                <button id="downloadBtn" class="btn" disabled style="margin-top: 1rem; width: 100%;">Export PNG</button>
+            </div>
+        </div>
+
+
+    </div>
+
+    <!-- Tab 2: Spatial Filters -->
+    <div id="tabFilters" class="tab-content">
+        <div class="container">
+            <div class="card">
+                <label class="section-label">Filter Settings</label>
+                
+                <div style="margin-bottom: 1rem;">
+                    <label style="display:block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">Filter Type</label>
+                    <select id="filterType" style="width: 100%; padding: 0.5rem; background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-main); border-radius: var(--radius-md);">
+                        <option value="mean">Mean Filter (Smoothing)</option>
+                        <option value="gaussian">Gaussian Filter</option>
+                        <option value="median">Median Filter</option>
+                    </select>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div>
+                        <label style="display:block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">Rows</label>
+                        <input type="number" id="kernelRows" value="3" min="3" step="2" style="width: 100%; padding: 0.5rem; background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-main); border-radius: var(--radius-md);">
+                    </div>
+                    <div>
+                        <label style="display:block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">Cols</label>
+                        <input type="number" id="kernelCols" value="3" min="3" step="2" style="width: 100%; padding: 0.5rem; background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-main); border-radius: var(--radius-md);">
+                    </div>
+                </div>
+
+                <div id="sigmaContainer" style="margin-bottom: 1rem; display: none;">
+                    <label style="display:block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">Sigma (σ)</label>
+                    <input type="number" id="sigmaVal" value="1.0" step="0.1" min="0.1" style="width: 100%; padding: 0.5rem; background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-main); border-radius: var(--radius-md);">
+                </div>
+
+                <button id="btnVisualize" class="btn" style="width: 100%; margin-bottom: 0.5rem;">👁️ Visualize Kernel</button>
+                <button id="btnApplyFilter" class="btn btn-primary" style="width: 100%;">⚡ Apply to Image</button>
+            </div>
+
+            <div class="card">
+                <label class="section-label">Kernel Visualization</label>
+                <div id="kernelMatrixContainer" style="text-align: center; color: var(--text-muted);">
+                    Click "Visualize Kernel" to see the matrix.
+                </div>
+
+                <label class="section-label" style="margin-top: 1.5rem;">Convolution Step</label>
+                <div id="simControls" style="display:none; margin-bottom: 1rem; gap: 0.5rem; justify-content: center;">
+                    <button id="btnPauseSim" class="btn">⏸ Pause</button>
+                    <button id="btnStopSim" class="btn" style="border-color: #ef4444; color: #ef4444;">⏹ Stop</button>
+                </div>
+                <div id="vizStep" style="font-family: monospace; background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px; min-height: 60px; display: flex; align-items: center; justify-content: center; color: var(--success-color);">
+                    Waiting for visualization...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Result Section -->
+    <div class="container" id="resultSection">
+        <div class="card" style="grid-column: 1 / -1; max-width: 600px; margin: 0 auto;">
+            <label class="section-label" id="resultTitle">Processed Image</label>
+            <div class="preview-container" style="display: block; margin-bottom: 1rem;">
+                <img id="resultImage" alt="Result">
+            </div>
+            
+            <!-- Histogram Container -->
+            <div id="resultHistogramContainer">
+                <label class="section-label">Result Histogram</label>
+                <div class="canvas-wrapper" style="height: 200px;">
+                    <canvas id="resultHistogramCanvas"></canvas>
+                </div>
+            </div>
+
+            <button id="downloadResultBtn" class="btn btn-primary" style="width: 100%;">Save Image</button>
+        </div>
+    </div>
+
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const previewContainer = document.getElementById('previewContainer');
+        const previewImage = document.getElementById('previewImage');
+        const canvas = document.getElementById('histogramCanvas');
+        const ctx = canvas.getContext('2d');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const navEqualize = document.getElementById('navEqualize');
+        const navLog = document.getElementById('navLog');
+        const navNegative = document.getElementById('navNegative');
+        const resultSection = document.getElementById('resultSection');
+        const resultImage = document.getElementById('resultImage');
+        const resultTitle = document.getElementById('resultTitle');
+        const downloadResultBtn = document.getElementById('downloadResultBtn');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const imageStats = document.getElementById('imageStats');
+        const modeRadios = document.querySelectorAll('input[name="mode"]');
+        const filterType = document.getElementById('filterType');
+        const sigmaContainer = document.getElementById('sigmaContainer');
+        const btnVisualize = document.getElementById('btnVisualize');
+        const btnApplyFilter = document.getElementById('btnApplyFilter');
+        const kernelMatrixContainer = document.getElementById('kernelMatrixContainer');
+        const btnScale = document.getElementById('btnScale');
+        const btnRotate = document.getElementById('btnRotate');
+        const btnTranslate = document.getElementById('btnTranslate');
+        const btnEnableCrop = document.getElementById('btnEnableCrop');
+        const btnApplyCrop = document.getElementById('btnApplyCrop');
+        const basicOpsPreviewImage = document.getElementById('basicOpsPreviewImage');
+        const basicOpsPreviewContainer = document.getElementById('basicOpsPreviewContainer');
+
+        const cropOverlay = document.getElementById('cropOverlay');
+        const imageShapeDisplay = document.getElementById('imageShapeDisplay');
+
+        let cropState = {
+            enabled: false,
+            startX: 0,
+            startY: 0,
+            isDrawing: false,
+            rect: null
+        };
+
+        let currentFile = null;
+        let currentMode = 'grayscale';
+        let currentHistData = null;
+
+        // Initialize
+        function init() {
+            dropZone.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', handleFileSelect);
+            
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, e => e.preventDefault(), false);
+            });
+            
+            dropZone.addEventListener('drop', handleDrop, false);
+
+            modeRadios.forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    currentMode = e.target.value;
+                    resultSection.style.display = 'none';
+                    if (currentFile) processImage(currentFile);
+                });
+            });
+
+            downloadBtn.addEventListener('click', downloadHistogram);
+            navEqualize.addEventListener('click', () => handleTool('/equalize', 'Equalized Image'));
+            navLog.addEventListener('click', () => handleTool('/log', 'Log Transformed Image'));
+            navNegative.addEventListener('click', () => handleTool('/negative', 'Negative Image'));
+            downloadResultBtn.addEventListener('click', downloadResultImage);
+
+            filterType.addEventListener('change', (e) => {
+                sigmaContainer.style.display = e.target.value === 'gaussian' ? 'block' : 'none';
+            });
+            
+            btnVisualize.addEventListener('click', visualizeKernel);
+            btnApplyFilter.addEventListener('click', applyFilter);
+
+            // Basic Ops Listeners
+            btnScale.addEventListener('click', handleScale);
+            btnRotate.addEventListener('click', handleRotate);
+            btnTranslate.addEventListener('click', handleTranslate);
+            btnEnableCrop.addEventListener('click', toggleCropMode);
+            btnApplyCrop.addEventListener('click', handleCrop);
+
+            // Crop Mouse Events
+            basicOpsPreviewImage.addEventListener('mousedown', startCropDraw);
+            window.addEventListener('mousemove', drawCropRect);
+            window.addEventListener('mouseup', endCropDraw);
+
+            // Tabs
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    btn.classList.add('active');
+                    document.getElementById(btn.getAttribute('data-tab')).classList.add('active');
+                });
+            });
+
+            resizeCanvas(canvas);
+            window.addEventListener('resize', () => {
+                resizeCanvas(canvas);
+                if (currentHistData) drawHistogram(currentHistData, ctx, currentMode);
+            });
+            
+            drawEmptyState(ctx);
+        }
+
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (file && file.type.startsWith('image/')) {
+                currentFile = file;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    previewImage.src = e.target.result;
+                    basicOpsPreviewImage.src = e.target.result;
+                    basicOpsPreviewImage.onload = () => {
+                        imageShapeDisplay.textContent = `Shape: ${basicOpsPreviewImage.naturalWidth} x ${basicOpsPreviewImage.naturalHeight}`;
+                    };
+                    previewContainer.style.display = 'block';
+                    basicOpsPreviewContainer.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+                processImage(file);
+            }
+        }
+
+        function handleDrop(e) {
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                currentFile = file;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    previewImage.src = e.target.result;
+                    previewImage.src = e.target.result;
+                    basicOpsPreviewImage.src = e.target.result;
+                    basicOpsPreviewImage.onload = () => {
+                        imageShapeDisplay.textContent = `Shape: ${basicOpsPreviewImage.naturalWidth} x ${basicOpsPreviewImage.naturalHeight}`;
+                    };
+                    previewContainer.style.display = 'block';
+                    basicOpsPreviewContainer.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+                processImage(file);
+            }
+        }
+
+        async function processImage(file) {
+            showLoading(true);
+            imageStats.textContent = "Analyzing...";
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('mode', currentMode);
+
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) throw new Error('Analysis failed');
+
+                const data = await response.json();
+                currentHistData = data;
+
+                imageStats.textContent = `Analysis Complete (${currentMode})`;
+                drawHistogram(data, ctx, currentMode);
+                downloadBtn.disabled = false;
+                resultSection.style.display = 'none';
+
+            } catch (error) {
+                console.error(error);
+                alert('Error processing image: ' + error.message);
+                imageStats.textContent = "Error";
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function handleTool(endpoint, title) {
+            if (!currentFile) return;
+            showLoading(true);
+
+            const formData = new FormData();
+            formData.append('file', currentFile);
+            formData.append('mode', currentMode);
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) throw new Error('Processing failed');
+
+                const data = await response.json();
+                
+                resultSection.style.display = 'grid';
+                resultTitle.textContent = title;
+                resultImage.src = data.image;
+                
+                const histContainer = document.getElementById('resultHistogramContainer');
+                const histCanvas = document.getElementById('resultHistogramCanvas');
+                
+                if (data.histogram && histCanvas) {
+                    histContainer.style.display = 'block';
+                    resizeCanvas(histCanvas);
+                    drawHistogram(data.histogram, histCanvas.getContext('2d'), currentMode);
+                } else {
+                    histContainer.style.display = 'none';
+                }
+                
+                resultSection.scrollIntoView({ behavior: 'smooth' });
+
+            } catch (error) {
+                console.error(error);
+                alert('Error processing image: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function visualizeKernel() {
+            const type = filterType.value;
+            const rows = parseInt(document.getElementById('kernelRows').value);
+            const cols = parseInt(document.getElementById('kernelCols').value);
+            const sigma = parseFloat(document.getElementById('sigmaVal').value);
+
+            let kernel;
+            if (type === 'mean') {
+                kernel = Array(rows).fill(null).map(() => Array(cols).fill(1 / (rows * cols)));
+            } else {
+                kernel = createGaussianKernel(rows, cols, sigma);
+            }
+
+            if (currentFile) {
+                const pixels = await extractPixelMatrix(currentFile);
+                const padH = Math.floor(rows / 2);
+                const padW = Math.floor(cols / 2);
+                const paddedPixels = [];
+                
+                for (let i = 0; i < padH; i++) {
+                    const row = [];
+                    for (let j = 0; j < pixels[0].length + 2 * padW; j++) {
+                        row.push({ val: 0, isPad: true });
+                    }
+                    paddedPixels.push(row);
+                }
+                
+                for (let i = 0; i < pixels.length; i++) {
+                    const row = [];
+                    for (let j = 0; j < padW; j++) row.push({ val: 0, isPad: true });
+                    for (let j = 0; j < pixels[i].length; j++) row.push({ val: pixels[i][j], isPad: false });
+                    for (let j = 0; j < padW; j++) row.push({ val: 0, isPad: true });
+                    paddedPixels.push(row);
+                }
+                
+                for (let i = 0; i < padH; i++) {
+                    const row = [];
+                    for (let j = 0; j < pixels[0].length + 2 * padW; j++) {
+                        row.push({ val: 0, isPad: true });
+                    }
+                    paddedPixels.push(row);
+                }
+                
+                renderVisualizationLayout(paddedPixels, kernel);
+                simulateConvolution(pixels, kernel);
+            } else {
+                alert("Please upload an image first!");
+            }
+        }
+
+        function extractPixelMatrix(file) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => {
+                    try {
+                        const tempCanvas = document.createElement('canvas');
+                        const tempCtx = tempCanvas.getContext('2d');
+                        const w = 10, h = 10;
+                        tempCanvas.width = w;
+                        tempCanvas.height = h;
+                        tempCtx.drawImage(img, 0, 0, w, h);
+                        
+                        const data = tempCtx.getImageData(0, 0, w, h).data;
+                        const pixels = [];
+                        
+                        for (let i = 0; i < h; i++) {
+                            const row = [];
+                            for (let j = 0; j < w; j++) {
+                                const idx = (i * w + j) * 4;
+                                const gray = Math.floor(0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2]);
+                                row.push(gray);
+                            }
+                            pixels.push(row);
+                        }
+                        resolve(pixels);
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                img.onerror = reject;
+                img.src = URL.createObjectURL(file);
+            });
+        }
+
+        function createGaussianKernel(rows, cols, sigma) {
+            const ax = Array.from({length: cols}, (_, i) => i - (cols - 1) / 2);
+            const ay = Array.from({length: rows}, (_, i) => i - (rows - 1) / 2);
+            const kernel = [];
+            let sum = 0;
+            
+            for (let i = 0; i < rows; i++) {
+                const row = [];
+                for (let j = 0; j < cols; j++) {
+                    const val = Math.exp(-0.5 * (ax[j] * ax[j] + ay[i] * ay[i]) / (sigma * sigma));
+                    row.push(val);
+                    sum += val;
+                }
+                kernel.push(row);
+            }
+            
+            return kernel.map(row => row.map(val => val / sum));
+        }
+
+        function renderVisualizationLayout(pixels, kernel) {
+            kernelMatrixContainer.innerHTML = '';
+            const wrapper = document.createElement('div');
+            wrapper.style.display = 'flex';
+            wrapper.style.flexDirection = 'column';
+            wrapper.style.gap = '2rem';
+            wrapper.style.alignItems = 'center';
+            
+            const topRow = document.createElement('div');
+            topRow.style.display = 'flex';
+            topRow.style.gap = '1rem';
+            topRow.style.alignItems = 'center';
+            topRow.style.flexWrap = 'wrap';
+            topRow.style.justifyContent = 'center';
+            
+            topRow.appendChild(createGridSection('Input (Padded)', pixels, 'input', false, true));
+            
+            const op = document.createElement('div');
+            op.innerHTML = '⊛';
+            op.style.fontSize = '2rem';
+            topRow.appendChild(op);
+            
+            topRow.appendChild(createGridSection('Kernel', kernel, 'kernel', true));
+            
+            const bottomRow = document.createElement('div');
+            bottomRow.style.display = 'flex';
+            bottomRow.style.justifyContent = 'center';
+            bottomRow.style.marginTop = '1rem';
+            
+            const emptyOutput = pixels.map(row => row.map(() => 0));
+            bottomRow.appendChild(createGridSection('Output', emptyOutput, 'output'));
+            
+            wrapper.appendChild(topRow);
+            wrapper.appendChild(bottomRow);
+            kernelMatrixContainer.appendChild(wrapper);
+        }
+
+        function createGridSection(title, data, idPrefix, isFloat = false, isPaddedStruct = false) {
+            const container = document.createElement('div');
+            container.style.textAlign = 'center';
+            
+            const label = document.createElement('div');
+            label.textContent = title;
+            label.style.marginBottom = '5px';
+            label.style.color = 'var(--text-muted)';
+            label.style.fontSize = '0.9rem';
+            
+            const grid = document.createElement('div');
+            grid.className = 'matrix-grid';
+            grid.style.gridTemplateColumns = `repeat(${data[0].length}, 1fr)`;
+            
+            data.forEach((row, i) => {
+                row.forEach((item, j) => {
+                    const cell = document.createElement('div');
+                    cell.className = 'matrix-cell';
+                    cell.id = `${idPrefix}-${i}-${j}`;
+                    
+                    let val = item;
+                    let isPad = false;
+                    
+                    if (isPaddedStruct && typeof item === 'object') {
+                        val = item.val !== undefined ? item.val : 0;
+                        isPad = item.isPad || false;
+                    }
+                    
+                    const numVal = Number(val);
+                    cell.textContent = isNaN(numVal) ? '0' : (isFloat ? numVal.toFixed(2) : Math.floor(numVal));
+                    cell.style.fontSize = '0.65rem';
+                    cell.style.width = '28px';
+                    cell.style.height = '28px';
+                    
+                    if (isPad) {
+                        cell.style.backgroundColor = 'rgba(239, 68, 68, 0.2)';
+                        cell.style.borderColor = 'rgba(239, 68, 68, 0.5)';
+                        cell.style.color = '#fca5a5';
+                    }
+                    
+                    grid.appendChild(cell);
+                });
+            });
+            
+            container.appendChild(label);
+            container.appendChild(grid);
+            return container;
+        }
+
+        let simState = { paused: false, interval: null };
+
+        function simulateConvolution(pixels, kernel) {
+            if (simState.interval) clearInterval(simState.interval);
+            simState.paused = false;
+            
+            const controls = document.getElementById('simControls');
+            controls.style.display = 'flex';
+            
+            const btnPause = document.getElementById('btnPauseSim');
+            const btnStop = document.getElementById('btnStopSim');
+            
+            const newPause = btnPause.cloneNode(true);
+            const newStop = btnStop.cloneNode(true);
+            btnPause.parentNode.replaceChild(newPause, btnPause);
+            btnStop.parentNode.replaceChild(newStop, btnStop);
+            
+            newPause.addEventListener('click', () => {
+                simState.paused = !simState.paused;
+                newPause.textContent = simState.paused ? "▶ Resume" : "⏸ Pause";
+            });
+            
+            newStop.addEventListener('click', () => {
+                if (simState.interval) clearInterval(simState.interval);
+                simState.interval = null;
+                vizStep.innerHTML = "Simulation Stopped.";
+                controls.style.display = 'none';
+            });
+            
+            newPause.textContent = "⏸ Pause";
+            vizStep.innerHTML = '<div id="mathLine">Starting simulation...</div>';
+            
+            const rows = pixels.length;
+            const cols = pixels[0].length;
+            const kRows = kernel.length;
+            const kCols = kernel[0].length;
+            const padH = Math.floor(kRows / 2);
+            const padW = Math.floor(kCols / 2);
+            
+            let i = 0, j = 0;
+            
+            simState.interval = setInterval(() => {
+                if (simState.paused) return;
+                
+                document.querySelectorAll('.matrix-cell').forEach(c => {
+                    if (c.style.backgroundColor !== 'rgba(239, 68, 68, 0.2)') {
+                        c.style.backgroundColor = 'var(--card-bg)';
+                        c.style.color = 'var(--text-main)';
+                    } else {
+                        c.style.backgroundColor = 'rgba(239, 68, 68, 0.2)';
+                        c.style.color = '#fca5a5';
+                    }
+                    c.style.transform = 'none';
+                    c.style.boxShadow = 'none';
+                });
+                
+                if (i >= rows) {
+                    clearInterval(simState.interval);
+                    document.getElementById('mathLine').textContent = "Simulation Complete!";
+                    controls.style.display = 'none';
+                    return;
+                }
+                
+                const outCell = document.getElementById(`output-${i}-${j}`);
+                if (outCell) {
+                    outCell.style.backgroundColor = 'var(--accent-color)';
+                    outCell.style.color = 'white';
+                    outCell.style.transform = 'scale(1.1)';
+                }
+                
+                let sum = 0;
+                for (let ki = 0; ki < kRows; ki++) {
+                    for (let kj = 0; kj < kCols; kj++) {
+                        const pi = i + ki;
+                        const pj = j + kj;
+                        
+                        let val = 0;
+                        const origI = pi - padH;
+                        const origJ = pj - padW;
+                        
+                        if (origI >= 0 && origI < rows && origJ >= 0 && origJ < cols) {
+                            val = pixels[origI][origJ];
+                        }
+                        
+                        sum += val * kernel[ki][kj];
+                        
+                        const inCell = document.getElementById(`input-${pi}-${pj}`);
+                        if (inCell) {
+                            inCell.style.backgroundColor = 'rgba(255, 255, 0, 0.3)';
+                            inCell.style.boxShadow = 'inset 0 0 0 1px yellow';
+                            inCell.style.color = '#fff';
+                        }
+                        
+                        const kCell = document.getElementById(`kernel-${ki}-${kj}`);
+                        if (kCell) {
+                            kCell.style.backgroundColor = 'rgba(99, 102, 241, 0.3)';
+                        }
+                    }
+                }
+                
+                if (outCell) outCell.textContent = Math.floor(sum);
+                document.getElementById('mathLine').innerHTML = `Calculating pixel (${i},${j}): Sum = <b>${sum.toFixed(1)}</b>`;
+                
+                j++;
+                if (j >= cols) {
+                    j = 0;
+                    i++;
+                }
+            }, 800);
+        }
+
+        async function applyFilter() {
+            if (!currentFile) {
+                alert("Please upload an image first!");
+                return;
+            }
+            
+            showLoading(true);
+            const formData = new FormData();
+            formData.append('file', currentFile);
+            formData.append('type', filterType.value);
+            formData.append('rows', document.getElementById('kernelRows').value);
+            formData.append('cols', document.getElementById('kernelCols').value);
+            formData.append('sigma', document.getElementById('sigmaVal').value);
+
+            try {
+                const response = await fetch('/apply_filter', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) throw new Error('Filter failed');
+
+                const data = await response.json();
+                resultSection.style.display = 'grid';
+                resultTitle.textContent = `Filtered Image (${filterType.value})`;
+                resultImage.src = data.image;
+                document.getElementById('resultHistogramContainer').style.display = 'none';
+                resultSection.scrollIntoView({ behavior: 'smooth' });
+
+            } catch (error) {
+                console.error(error);
+                alert('Error applying filter: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function handleScale() {
+            if (!currentFile) return alert("Upload image first");
+            const factor = document.getElementById('scaleFactor').value;
+            const formData = new FormData();
+            formData.append('file', currentFile);
+            formData.append('factor', factor);
+            await sendBasicOp('/scale', formData, "Scaled Image");
+        }
+
+        async function handleRotate() {
+            if (!currentFile) return alert("Upload image first");
+            const angle = document.getElementById('rotateAngle').value;
+            const expand = document.getElementById('rotateExpand').checked;
+            const cx = document.getElementById('rotateCenterX').value;
+            const cy = document.getElementById('rotateCenterY').value;
+            
+            const formData = new FormData();
+            formData.append('file', currentFile);
+            formData.append('angle', angle);
+            formData.append('expand', expand);
+            if (cx) formData.append('centerX', cx);
+            if (cy) formData.append('centerY', cy);
+            
+            await sendBasicOp('/rotate', formData, "Rotated Image");
+        }
+
+        async function handleTranslate() {
+            if (!currentFile) return alert("Upload image first");
+            const x = document.getElementById('transX').value;
+            const y = document.getElementById('transY').value;
+            
+            const formData = new FormData();
+            formData.append('file', currentFile);
+            formData.append('x', x);
+            formData.append('y', y);
+            
+            await sendBasicOp('/translate', formData, "Translated Image");
+        }
+
+        function toggleCropMode() {
+            if (!currentFile) return alert("Upload image first");
+            cropState.enabled = !cropState.enabled;
+            btnEnableCrop.textContent = cropState.enabled ? "Disable Crop Mode" : "Enable Crop Mode";
+            btnEnableCrop.style.borderColor = cropState.enabled ? "var(--accent-color)" : "var(--border-color)";
+            basicOpsPreviewContainer.style.cursor = cropState.enabled ? "crosshair" : "default";
+            if (!cropState.enabled) {
+                cropOverlay.style.display = 'none';
+                btnApplyCrop.disabled = true;
+            }
+        }
+
+        function startCropDraw(e) {
+            if (!cropState.enabled) return;
+            e.preventDefault();
+            const rect = basicOpsPreviewImage.getBoundingClientRect();
+            cropState.isDrawing = true;
+            cropState.startX = e.clientX - rect.left;
+            cropState.startY = e.clientY - rect.top;
+            
+            cropOverlay.style.left = cropState.startX + 'px';
+            cropOverlay.style.top = cropState.startY + 'px';
+            cropOverlay.style.width = '0px';
+            cropOverlay.style.height = '0px';
+            cropOverlay.style.display = 'block';
+        }
+
+        function drawCropRect(e) {
+            if (!cropState.isDrawing || !cropState.enabled) return;
+            const rect = basicOpsPreviewImage.getBoundingClientRect();
+            const currentX = Math.min(Math.max(0, e.clientX - rect.left), rect.width);
+            const currentY = Math.min(Math.max(0, e.clientY - rect.top), rect.height);
+            
+            const width = currentX - cropState.startX;
+            const height = currentY - cropState.startY;
+            
+            cropOverlay.style.width = Math.abs(width) + 'px';
+            cropOverlay.style.height = Math.abs(height) + 'px';
+            cropOverlay.style.left = (width < 0 ? currentX : cropState.startX) + 'px';
+            cropOverlay.style.top = (height < 0 ? currentY : cropState.startY) + 'px';
+        }
+
+        function endCropDraw(e) {
+            if (!cropState.isDrawing) return;
+            cropState.isDrawing = false;
+            
+            const overlayRect = cropOverlay.getBoundingClientRect();
+            const imgRect = basicOpsPreviewImage.getBoundingClientRect();
+            
+            // Calculate actual crop coordinates relative to the image
+            // We need to map display coordinates to natural image coordinates
+            const scaleX = basicOpsPreviewImage.naturalWidth / imgRect.width;
+            const scaleY = basicOpsPreviewImage.naturalHeight / imgRect.height;
+            
+            const left = (overlayRect.left - imgRect.left) * scaleX;
+            const top = (overlayRect.top - imgRect.top) * scaleY;
+            const width = overlayRect.width * scaleX;
+            const height = overlayRect.height * scaleY;
+            
+            if (width > 0 && height > 0) {
+                cropState.rect = { left, top, width, height };
+                btnApplyCrop.disabled = false;
+            }
+        }
+
+        async function handleCrop() {
+            if (!cropState.rect) return;
+            const formData = new FormData();
+            formData.append('file', currentFile);
+            formData.append('left', cropState.rect.left);
+            formData.append('top', cropState.rect.top);
+            formData.append('width', cropState.rect.width);
+            formData.append('height', cropState.rect.height);
+            
+            await sendBasicOp('/crop', formData, "Cropped Image");
+            
+            // Reset crop UI
+            cropOverlay.style.display = 'none';
+            btnApplyCrop.disabled = true;
+            toggleCropMode(); // Disable mode after crop
+        }
+
+        async function sendBasicOp(endpoint, formData, title) {
+            showLoading(true);
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) throw new Error('Operation failed');
+
+                const data = await response.json();
+                
+                // Update Basic Ops Preview in-place
+                basicOpsPreviewImage.src = data.image;
+                
+                // Update shape display when image loads
+                basicOpsPreviewImage.onload = () => {
+                    imageShapeDisplay.textContent = `Shape: ${basicOpsPreviewImage.naturalWidth} x ${basicOpsPreviewImage.naturalHeight}`;
+                };
+                
+                // Update currentFile so next operation uses the modified image
+                const blob = await (await fetch(data.image)).blob();
+                currentFile = new File([blob], "modified.png", { type: "image/png" });
+
+                // Also update Result Section (optional, but good for history/download)
+                resultSection.style.display = 'grid';
+                resultTitle.textContent = title;
+                resultImage.src = data.image;
+                document.getElementById('resultHistogramContainer').style.display = 'none';
+                // resultSection.scrollIntoView({ behavior: 'smooth' }); // Don't scroll away from controls
+
+            } catch (error) {
+                console.error(error);
+                alert('Error: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+
+        function resizeCanvas(targetCanvas) {
+            const rect = targetCanvas.parentElement.getBoundingClientRect();
+            targetCanvas.width = rect.width;
+            targetCanvas.height = rect.height;
+        }
+
+        function drawEmptyState(targetCtx) {
+            const w = targetCtx.canvas.width;
+            const h = targetCtx.canvas.height;
+            targetCtx.clearRect(0, 0, w, h);
+            targetCtx.fillStyle = '#2d3139';
+            targetCtx.font = '14px Outfit';
+            targetCtx.textAlign = 'center';
+            targetCtx.fillText('Upload an image to view histogram', w / 2, h / 2);
+        }
+
+        function drawHistogram(histData, targetCtx, mode) {
+            if (!histData) return;
+
+            const width = targetCtx.canvas.width;
+            const height = targetCtx.canvas.height;
+            const padding = { top: 20, right: 20, bottom: 30, left: 40 };
+            const drawWidth = width - padding.left - padding.right;
+            const drawHeight = height - padding.top - padding.bottom;
+
+            targetCtx.clearRect(0, 0, width, height);
+
+            // Axes
+            targetCtx.strokeStyle = '#2d3139';
+            targetCtx.lineWidth = 1;
+            targetCtx.beginPath();
+            targetCtx.moveTo(padding.left, padding.top);
+            targetCtx.lineTo(padding.left, padding.top + drawHeight);
+            targetCtx.lineTo(padding.left + drawWidth, padding.top + drawHeight);
+            targetCtx.stroke();
+
+            targetCtx.fillStyle = '#6b7280';
+            targetCtx.font = '10px sans-serif';
+            targetCtx.textAlign = 'center';
+
+            [0, 64, 128, 192, 255].forEach(val => {
+                const x = padding.left + (val / 255) * drawWidth;
+                targetCtx.fillText(val, x, padding.top + drawHeight + 15);
+            });
+
+            targetCtx.textAlign = 'right';
+            targetCtx.fillText(histData.max > 1000 ? (histData.max / 1000).toFixed(1) + 'k' : histData.max, padding.left - 5, padding.top + 10);
+            targetCtx.fillText('0', padding.left - 5, padding.top + drawHeight);
+
+            if (mode === 'grayscale' && histData.gray) {
+                targetCtx.fillStyle = '#9ca3af';
+                const barWidth = drawWidth / 256;
+                for (let i = 0; i < 256; i++) {
+                    const val = histData.gray[i];
+                    const barHeight = (val / histData.max) * drawHeight;
+                    const x = padding.left + (i * barWidth);
+                    const y = padding.top + drawHeight - barHeight;
+                    targetCtx.fillRect(x, y, Math.max(barWidth, 1), barHeight);
+                }
+            } else if (histData.r && histData.g && histData.b) {
+                targetCtx.globalCompositeOperation = 'screen';
+                
+                ['r', 'g', 'b'].forEach((channel, idx) => {
+                    const colors = ['rgba(239, 68, 68, 0.6)', 'rgba(34, 197, 94, 0.6)', 'rgba(59, 130, 246, 0.6)'];
+                    targetCtx.fillStyle = colors[idx];
+                    targetCtx.beginPath();
+                    targetCtx.moveTo(padding.left, padding.top + drawHeight);
+                    
+                    for (let i = 0; i < 256; i++) {
+                        const val = histData[channel][i];
+                        const barHeight = (val / histData.max) * drawHeight;
+                        const x = padding.left + (i / 255) * drawWidth;
+                        const y = padding.top + drawHeight - barHeight;
+                        targetCtx.lineTo(x, y);
+                    }
+                    
+                    targetCtx.lineTo(padding.left + drawWidth, padding.top + drawHeight);
+                    targetCtx.closePath();
+                    targetCtx.fill();
+                });
+                
+                targetCtx.globalCompositeOperation = 'source-over';
+            }
+        }
+
+        function showLoading(isLoading) {
+            loadingOverlay.classList.toggle('active', isLoading);
+        }
+
+        function downloadHistogram() {
+            const link = document.createElement('a');
+            link.download = 'histogram.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+
+        function downloadResultImage() {
+            if (!resultImage.src) return;
+            const link = document.createElement('a');
+            link.download = 'processed_image.png';
+            link.href = resultImage.src;
+            link.click();
+        }
+
+        init();
+    </script>
+</body>
+</html>
